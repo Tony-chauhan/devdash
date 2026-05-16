@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevDash — Developer Productivity Dashboard</title>
+<meta name="description" content="Track your coding goals, manage snippets, and monitor productivity with a beautiful developer dashboard.">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#08090e;--card:rgba(14,16,26,0.92);--glass:rgba(255,255,255,0.03);--g1:#22d3ee;--g2:#6366f1;--g3:#a855f7;--green:#10b981;--amber:#f59e0b;--rose:#f43f5e;--text:#e2e8f0;--text2:#64748b;--border:rgba(255,255,255,0.06);--r:14px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 15% 10%,rgba(34,211,238,0.07),transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(99,102,241,0.06),transparent 55%);pointer-events:none}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,9,14,0.82);backdrop-filter:blur(24px);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px;font-size:1.25rem;font-weight:800}
+.logo-icon{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-items:center;font-size:0.9rem;color:#fff;font-weight:800}
+.logo span{background:linear-gradient(135deg,var(--g1),var(--g2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;gap:6px;background:var(--glass);border-radius:30px;padding:3px;border:1px solid var(--border)}
+.nav-links button{padding:7px 18px;border:none;border-radius:26px;background:transparent;color:var(--text2);font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.3s;font-family:inherit}
+.nav-links button.active{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;box-shadow:0 2px 12px rgba(34,211,238,0.25)}
+
+.main{max-width:1180px;margin:72px auto 40px;padding:20px;position:relative;z-index:1}
+.panel{display:none}.panel.active{display:block;animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;backdrop-filter:blur(10px)}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-head h3{font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);font-weight:600}
+
+/* DASHBOARD */
+.dash-top{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+@media(max-width:800px){.dash-top{grid-template-columns:repeat(2,1fr)}}
+.stat{padding:20px;border-radius:var(--r);background:var(--card);border:1px solid var(--border);text-align:center;transition:transform .3s,box-shadow .3s}
+.stat:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.stat-icon{font-size:1.4rem;margin-bottom:6px}
+.stat-val{font-size:1.9rem;font-weight:800;background:linear-gradient(135deg,var(--g1),var(--g2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:.68rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.dash-grid{grid-template-columns:1fr}}
+
+/* HEATMAP */
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.heat-cell{aspect-ratio:1;border-radius:4px;background:var(--glass);transition:transform .2s}
+.heat-cell:hover{transform:scale(1.3)}
+.heat-0{background:rgba(34,211,238,.05)}.heat-1{background:rgba(34,211,238,.2)}.heat-2{background:rgba(34,211,238,.4)}.heat-3{background:rgba(34,211,238,.6)}.heat-4{background:rgba(34,211,238,.85)}
+
+/* ACTIVITY CHART */
+.activity-bars{display:flex;align-items:flex-end;gap:4px;height:110px;padding-top:8px}
+.a-bar{flex:1;border-radius:4px 4px 0 0;transition:height .6s ease;position:relative;cursor:pointer;min-height:3px}
+.a-bar:hover::after{content:attr(data-val);position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:.6rem;color:var(--g1);background:var(--card);padding:2px 6px;border-radius:4px;white-space:nowrap}
+
+/* GOALS */
+.goal-item{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;background:var(--glass);border:1px solid var(--border);margin-bottom:8px;transition:background .3s}
+.goal-item:hover{background:rgba(255,255,255,.04)}
+.goal-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--g2);cursor:pointer;display:grid;place-items:center;flex-shrink:0;transition:all .25s}
+.goal-check.done{background:var(--green);border-color:var(--green)}
+.goal-check.done::after{content:'✓';color:#fff;font-size:.65rem;font-weight:700}
+.goal-text{flex:1;font-size:.85rem}.goal-item.completed .goal-text{text-decoration:line-through;opacity:.5}
+.goal-tag{padding:3px 9px;border-radius:20px;font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.tag-code{background:rgba(34,211,238,.12);color:var(--g1)}.tag-learn{background:rgba(168,85,247,.12);color:var(--g3)}.tag-build{background:rgba(16,185,129,.12);color:var(--green)}
+.goal-del{background:none;border:none;color:var(--text2);cursor:pointer;opacity:0;transition:opacity .3s;font-size:.85rem}
+.goal-item:hover .goal-del{opacity:1}
+
+/* SNIPPETS */
+.snippet-card{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;transition:all .3s}
+.snippet-card:hover{border-color:rgba(34,211,238,.2)}
+.snippet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.snippet-title{font-size:.85rem;font-weight:600}
+.snippet-lang{padding:3px 10px;border-radius:20px;font-size:.6rem;font-weight:700;background:rgba(99,102,241,.15);color:var(--g2)}
+pre.snippet-code{background:rgba(0,0,0,.4);border-radius:8px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--g1);overflow-x:auto;line-height:1.7;border:1px solid var(--border)}
+.snippet-actions{display:flex;gap:6px;margin-top:10px}
+.snippet-actions button{padding:5px 12px;border:none;border-radius:8px;font-size:.7rem;cursor:pointer;font-family:inherit;font-weight:600;transition:all .2s}
+.btn-copy{background:rgba(34,211,238,.1);color:var(--g1)}.btn-copy:hover{background:rgba(34,211,238,.2)}
+.btn-del{background:rgba(244,63,94,.08);color:var(--rose)}.btn-del:hover{background:rgba(244,63,94,.15)}
+
+/* ADD FORMS */
+.add-row{display:flex;gap:8px;margin-bottom:14px}
+.add-row input,.add-row select,.add-row textarea{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--glass);color:var(--text);font-size:.82rem;font-family:inherit;outline:none;transition:border .3s}
+.add-row input:focus,.add-row select:focus,.add-row textarea:focus{border-color:var(--g1)}
+.add-row select{max-width:120px}
+.add-row button,.add-btn{padding:10px 18px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .2s}
+.add-btn:hover{transform:scale(1.04)}
+
+/* NOTES */
+.note-card{padding:16px;border-radius:12px;background:var(--glass);border:1px solid var(--border);margin-bottom:10px;cursor:pointer;transition:all .3s}
+.note-card:hover{background:rgba(255,255,255,.04);border-color:rgba(99,102,241,.2)}
+.note-title{font-size:.88rem;font-weight:600;margin-bottom:6px}
+.note-body{font-size:.78rem;color:var(--text2);line-height:1.6;max-height:60px;overflow:hidden}
+.note-meta{display:flex;gap:12px;margin-top:8px;font-size:.65rem;color:var(--text2)}
+
+footer{text-align:center;padding:28px;color:var(--text2);font-size:.72rem;position:relative;z-index:1}
+footer a{color:var(--g1);text-decoration:none}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo"><div class="logo-icon">&lt;/&gt;</div><span>DevDash</span></div>
+  <div class="nav-links">
+    <button class="active" onclick="show('dashboard')">Dashboard</button>
+    <button onclick="show('snippets')">Snippets</button>
+    <button onclick="show('notes')">Notes</button>
+  </div>
+</nav>
+
+<div class="main">
+<!-- DASHBOARD -->
+<div class="panel active" id="p-dashboard">
+  <div class="dash-top">
+    <div class="stat"><div class="stat-icon">🔥</div><div class="stat-val" id="s-streak">0</div><div class="stat-label">Day Streak</div></div>
+    <div class="stat"><div class="stat-icon">✅</div><div class="stat-val" id="s-goals">0</div><div class="stat-label">Goals Done</div></div>
+    <div class="stat"><div class="stat-icon">📝</div><div class="stat-val" id="s-snippets">0</div><div class="stat-label">Snippets</div></div>
+    <div class="stat"><div class="stat-icon">⏱</div><div class="stat-val" id="s-hours">0h</div><div class="stat-label">Code Hours</div></div>
+  </div>
+  <div class="dash-grid">
+    <div class="card">
+      <div class="card-head"><h3>📅 Contribution Heatmap</h3></div>
+      <div class="heatmap" id="heatmap"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>📊 Weekly Activity</h3></div>
+      <div class="activity-bars" id="activity"></div>
+    </div>
+    <div class="card" style="grid-column:span 2">
+      <div class="card-head"><h3>🎯 Coding Goals</h3><button class="add-btn" onclick="document.getElementById('goal-form').style.display='flex'">+ Add</button></div>
+      <div class="add-row" id="goal-form" style="display:none">
+        <input id="goal-in" placeholder="Enter a goal..." onkeydown="if(event.key==='Enter')addGoal()">
+        <select id="goal-tag"><option value="code">Code</option><option value="learn">Learn</option><option value="build">Build</option></select>
+        <button onclick="addGoal()">Add</button>
+      </div>
+      <div id="goal-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SNIPPETS -->
+<div class="panel" id="p-snippets">
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-head"><h3>💾 Code Snippets</h3></div>
+    <div class="add-row"><input id="sn-title" placeholder="Snippet title..."><select id="sn-lang"><option>JavaScript</option><option>Python</option><option>HTML</option><option>CSS</option><option>Rust</option><option>Go</option></select></div>
+    <div class="add-row"><textarea id="sn-code" rows="3" placeholder="Paste code here..." style="font-family:'JetBrains Mono',monospace;font-size:.8rem"></textarea></div>
+    <button class="add-btn" onclick="addSnippet()">💾 Save Snippet</button>
+  </div>
+  <div id="snippet-list"></div>
+</div>
+
+<!-- NOTES -->
+<div class="panel" id="p-notes">
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-head"><h3>📓 Quick Notes</h3></div>
+    <div class="add-row"><input id="note-title" placeholder="Note title..."></div>
+    <div class="add-row"><textarea id="note-body" rows="3" placeholder="Write your note..."></textarea></div>
+    <button class="add-btn" onclick="addNote()">📝 Save Note</button>
+  </div>
+  <div id="note-list"></div>
+</div>
+</div>
+
+<footer>Built with ❤ by <a href="#">Dharmender Chauhan</a> · DevDash &copy; 2026</footer>
+
+<script>
+function show(p){
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.getElementById('p-'+p).classList.add('active');
+  document.querySelectorAll('.nav-links button').forEach((b,i)=>b.classList.toggle('active',['dashboard','snippets','notes'][i]===p));
+}
+function ls(k,d){try{return JSON.parse(localStorage.getItem('dd_'+k))||d}catch{return d}}
+function sv(k,v){localStorage.setItem('dd_'+k,JSON.stringify(v))}
+
+// HEATMAP
+let hm=ls('heatmap',[]);
+if(!hm.length){hm=[];for(let i=0;i<35;i++)hm.push(Math.floor(Math.random()*5));sv('heatmap',hm)}
+function renderHeatmap(){document.getElementById('heatmap').innerHTML=hm.map(v=>`<div class="heat-cell heat-${v}" title="${v} contributions"></div>`).join('')}
+
+// ACTIVITY
+let act=ls('activity',[]);
+if(!act.length){act=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>({day:d,val:Math.floor(Math.random()*90+10)}));sv('activity',act)}
+function renderActivity(){
+  let mx=Math.max(...act.map(a=>a.val));
+  document.getElementById('activity').innerHTML=act.map((a,i)=>{
+    let colors=['var(--g1)','var(--g2)','var(--g3)','var(--green)','var(--amber)','var(--g1)','var(--g2)'];
+    return`<div class="a-bar" style="height:${(a.val/mx)*100}%;background:linear-gradient(180deg,${colors[i]},rgba(0,0,0,0.1))" data-val="${a.day}: ${a.val}min"></div>`;
+  }).join('');
+}
+
+// GOALS
+let goals=ls('goals',[]);
+if(!goals.length){goals=[{text:'Build a REST API',tag:'build',done:false},{text:'Learn TypeScript generics',tag:'learn',done:false},{text:'50 LeetCode problems',tag:'code',done:true},{text:'Deploy portfolio site',tag:'build',done:false}];sv('goals',goals)}
+function renderGoals(){
+  document.getElementById('goal-list').innerHTML=goals.map((g,i)=>`
+    <div class="goal-item ${g.done?'completed':''}">
+      <div class="goal-check ${g.done?'done':''}" onclick="toggleGoal(${i})"></div>
+      <div class="goal-text">${g.text}</div>
+      <span class="goal-tag tag-${g.tag}">${g.tag}</span>
+      <button class="goal-del" onclick="delGoal(${i})">✕</button>
+    </div>`).join('');
+}
+function addGoal(){let t=document.getElementById('goal-in'),tg=document.getElementById('goal-tag');if(!t.value.trim())return;goals.unshift({text:t.value.trim(),tag:tg.value,done:false});t.value='';sv('goals',goals);renderGoals();updateStats()}
+function toggleGoal(i){goals[i].done=!goals[i].done;sv('goals',goals);renderGoals();updateStats()}
+function delGoal(i){goals.splice(i,1);sv('goals',goals);renderGoals();updateStats()}
+
+// SNIPPETS
+let snippets=ls('snippets',[]);
+if(!snippets.length){snippets=[
+  {title:'Debounce Function',lang:'JavaScript',code:'function debounce(fn, delay) {\n  let timer;\n  return (...args) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), delay);\n  };\n}'},
+  {title:'Flex Center',lang:'CSS',code:'.center {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}'}
+];sv('snippets',snippets)}
+function renderSnippets(){
+  document.getElementById('snippet-list').innerHTML=snippets.map((s,i)=>`
+    <div class="snippet-card">
+      <div class="snippet-head"><span class="snippet-title">${s.title}</span><span class="snippet-lang">${s.lang}</span></div>
+      <pre class="snippet-code">${escHtml(s.code)}</pre>
+      <div class="snippet-actions">
+        <button class="btn-copy" onclick="navigator.clipboard.writeText(snippets[${i}].code);this.textContent='Copied!';setTimeout(()=>this.textContent='📋 Copy',1000)">📋 Copy</button>
+        <button class="btn-del" onclick="snippets.splice(${i},1);sv('snippets',snippets);renderSnippets();updateStats()">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+function addSnippet(){
+  let t=document.getElementById('sn-title'),l=document.getElementById('sn-lang'),c=document.getElementById('sn-code');
+  if(!t.value.trim()||!c.value.trim())return;
+  snippets.unshift({title:t.value.trim(),lang:l.value,code:c.value});
+  t.value='';c.value='';sv('snippets',snippets);renderSnippets();updateStats();
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// NOTES
+let notes=ls('notes',[]);
+if(!notes.length){notes=[{title:'Project Ideas',body:'Build a real-time markdown editor with collaborative editing support.',date:'2026-05-15'},{title:'API Design Notes',body:'Use consistent naming conventions. Always version APIs. Return proper HTTP status codes.',date:'2026-05-14'}];sv('notes',notes)}
+function renderNotes(){
+  document.getElementById('note-list').innerHTML=notes.map((n,i)=>`
+    <div class="note-card" ondblclick="notes.splice(${i},1);sv('notes',notes);renderNotes()">
+      <div class="note-title">${n.title}</div>
+      <div class="note-body">${n.body}</div>
+      <div class="note-meta"><span>📅 ${n.date}</span><span>Double-click to delete</span></div>
+    </div>`).join('');
+}
+function addNote(){
+  let t=document.getElementById('note-title'),b=document.getElementById('note-body');
+  if(!t.value.trim())return;
+  notes.unshift({title:t.value.trim(),body:b.value.trim(),date:new Date().toISOString().slice(0,10)});
+  t.value='';b.value='';sv('notes',notes);renderNotes();
+}
+
+// STATS
+function updateStats(){
+  let streak=0;for(let i=hm.length-1;i>=0;i--){if(hm[i]>0)streak++;else break}
+  document.getElementById('s-streak').textContent=streak;
+  document.getElementById('s-goals').textContent=goals.filter(g=>g.done).length;
+  document.getElementById('s-snippets').textContent=snippets.length;
+  let hrs=act.reduce((a,b)=>a+b.val,0);
+  document.getElementById('s-hours').textContent=hrs>=60?Math.round(hrs/60)+'h':hrs+'m';
+}
+
+// INIT
+renderHeatmap();renderActivity();renderGoals();renderSnippets();renderNotes();updateStats();
+</script>
+</body>
+</html>
